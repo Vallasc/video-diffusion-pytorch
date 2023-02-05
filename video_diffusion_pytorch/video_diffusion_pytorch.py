@@ -947,8 +947,9 @@ class Trainer(object):
 
         while self.step < self.train_num_steps:
             for i in range(self.gradient_accumulate_every):
-                data = next(self.dl).cuda()
+                data = next(self.dl)
                 print(data)
+                data = data.cuda()
                 with autocast(enabled = self.amp):
                     if self.use_path_as_cond:
                         loss = self.model(
