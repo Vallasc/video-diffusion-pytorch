@@ -840,7 +840,7 @@ class Dataset(data.Dataset):
         path = self.paths[index]
         tensor = gif_to_tensor(path, self.channels, transform = self.transform)
         if self.use_path_as_cond:
-            return (self.cast_num_frames_fn(tensor), self.get_text_from_path(str(path.absolute())))
+            return (self.cast_num_frames_fn(tensor), get_text_from_path(str(path.absolute())))
         else:
             return self.cast_num_frames_fn(tensor)
 
