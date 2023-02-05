@@ -17,9 +17,9 @@ setup(
     'video generation'
   ],
   install_requires=[
-    'einops>=0.4',
-    'einops-exts',
-    'rotary-embedding-torch',
+    'einops==0.4.0',
+    'einops-exts==0.0.3',
+    'rotary-embedding-torch==0.1.5',
     'torch>=1.10',
     'torchvision',
     'tqdm'
