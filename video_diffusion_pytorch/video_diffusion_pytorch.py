@@ -798,6 +798,13 @@ def cast_num_frames(t, *, frames):
 
     return F.pad(t, (0, 0, 0, 0, 0, frames - f))
 
+def get_text_from_path(self, path):
+    out = path.split('/')[-1]
+    out = out.split('.')[0]
+    out = out.replace('-', ' ')
+    out = out.replace('_', ' ')
+    return out
+
 class Dataset(data.Dataset):
     def __init__(
         self,
@@ -807,9 +814,11 @@ class Dataset(data.Dataset):
         num_frames = 16,
         horizontal_flip = False,
         force_num_frames = True,
+        use_path_as_cond = False,
         exts = ['gif']
     ):
         super().__init__()
+        self.use_path_as_cond = use_path_as_cond
         self.folder = folder
         self.image_size = image_size
         self.channels = channels
@@ -830,7 +839,10 @@ class Dataset(data.Dataset):
     def __getitem__(self, index):
         path = self.paths[index]
         tensor = gif_to_tensor(path, self.channels, transform = self.transform)
-        return self.cast_num_frames_fn(tensor)
+        if self.use_path_as_cond:
+            return (self.cast_num_frames_fn(tensor), self.get_text_from_path(str(path.absolute())))
+        else:
+            return self.cast_num_frames_fn(tensor)
 
 # trainer class
 
@@ -852,7 +864,8 @@ class Trainer(object):
         save_and_sample_every = 1000,
         results_folder = './results',
         num_sample_rows = 4,
-        max_grad_norm = None
+        max_grad_norm = None,
+        use_path_as_cond = False
     ):
         super().__init__()
         self.model = diffusion_model
@@ -867,12 +880,13 @@ class Trainer(object):
         self.image_size = diffusion_model.image_size
         self.gradient_accumulate_every = gradient_accumulate_every
         self.train_num_steps = train_num_steps
+        self.use_path_as_cond = use_path_as_cond
 
         image_size = diffusion_model.image_size
         channels = diffusion_model.channels
         num_frames = diffusion_model.num_frames
 
-        self.ds = Dataset(folder, image_size, channels = channels, num_frames = num_frames)
+        self.ds = Dataset(folder, image_size, channels = channels, num_frames = num_frames, use_path_as_cond = use_path_as_cond)
 
         print(f'found {len(self.ds)} videos as gif files at {folder}')
         assert len(self.ds) > 0, 'need to have at least 1 video to start training (although 1 is not great, try 100k)'
@@ -934,14 +948,20 @@ class Trainer(object):
         while self.step < self.train_num_steps:
             for i in range(self.gradient_accumulate_every):
                 data = next(self.dl).cuda()
-
                 with autocast(enabled = self.amp):
-                    loss = self.model(
-                        data,
-                        prob_focus_present = prob_focus_present,
-                        focus_present_mask = focus_present_mask
-                    )
-
+                    if self.use_path_as_cond:
+                        loss = self.model(
+                            data[0],
+                            cond = data[1],
+                            prob_focus_present = prob_focus_present,
+                            focus_present_mask = focus_present_mask
+                        )
+                    else:
+                        loss = self.model(
+                            data,
+                            prob_focus_present = prob_focus_present,
+                            focus_present_mask = focus_present_mask
+                        )
                     self.scaler.scale(loss / self.gradient_accumulate_every).backward()
 
                 print(f'{self.step}: {loss.item()}')
