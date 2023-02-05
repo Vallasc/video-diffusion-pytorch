@@ -1003,3 +1003,6 @@ class Trainer(object):
             self.step += 1
 
         print('training completed')
+
+    def get_model(self):
+        return self.model
