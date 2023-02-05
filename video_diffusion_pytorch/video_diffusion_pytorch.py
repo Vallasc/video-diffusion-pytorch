@@ -525,10 +525,7 @@ class Unet3D(nn.Module):
 
         x = torch.cat((x, r), dim = 1)
         return self.final_conv(x)
-
-    def distribute_layers_to_devices(self, device1, device2):
-        self.downs = self.downs.to(device1)
-        self.ups = self.ups.to(device2)
+        
 # gaussian diffusion trainer class
 
 def extract(a, t, x_shape):
