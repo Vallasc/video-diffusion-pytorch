@@ -865,10 +865,12 @@ class Trainer(object):
         results_folder = './results',
         num_sample_rows = 4,
         max_grad_norm = None,
-        use_path_as_cond = False
+        use_path_as_cond = False,
+        use_device = 'cuda'
     ):
         super().__init__()
         self.model = diffusion_model
+        self.use_device = use_device
         self.ema = EMA(ema_decay)
         self.ema_model = copy.deepcopy(self.model)
         self.update_ema_every = update_ema_every
@@ -949,9 +951,9 @@ class Trainer(object):
             for i in range(self.gradient_accumulate_every):
                 data = next(self.dl)
                 if self.use_path_as_cond:
-                    data[0] = data[0].cuda()
+                    data[0] = data[0].to(self.use_device)
                 else:
-                    data = data.cuda()
+                    data = data.to(self.use_device)
                 with autocast(enabled = self.amp):
                     if self.use_path_as_cond:
                         loss = self.model(
