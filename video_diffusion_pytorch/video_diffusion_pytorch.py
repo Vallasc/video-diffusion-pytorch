@@ -798,7 +798,7 @@ def cast_num_frames(t, *, frames):
 
     return F.pad(t, (0, 0, 0, 0, 0, frames - f))
 
-def get_text_from_path(self, path):
+def get_text_from_path(path):
     out = path.split('/')[-1]
     out = out.split('.')[0]
     out = out.replace('-', ' ')
