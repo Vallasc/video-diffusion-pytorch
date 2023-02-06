@@ -525,7 +525,7 @@ class Unet3D(nn.Module):
 
         x = torch.cat((x, r), dim = 1)
         return self.final_conv(x)
-        
+
 # gaussian diffusion trainer class
 
 def extract(a, t, x_shape):
@@ -866,10 +866,14 @@ class Trainer(object):
         num_sample_rows = 4,
         max_grad_norm = None,
         use_path_as_cond = False,
+        sample_text = None,
+        cond_scale = 2.,
         use_device = 'cuda'
     ):
         super().__init__()
         self.model = diffusion_model
+        self.sample_text = sample_text
+        self.cond_scale = cond_scale
         self.use_device = use_device
         self.ema = EMA(ema_decay)
         self.ema_model = copy.deepcopy(self.model)
@@ -938,6 +942,7 @@ class Trainer(object):
         self.model.load_state_dict(data['model'], **kwargs)
         self.ema_model.load_state_dict(data['ema'], **kwargs)
         self.scaler.load_state_dict(data['scaler'])
+        print(f"loaded model at step {self.step}")
 
     def train(
         self,
@@ -990,17 +995,16 @@ class Trainer(object):
                 num_samples = self.num_sample_rows ** 2
                 batches = num_to_groups(num_samples, self.batch_size)
 
-                all_videos_list = list(map(lambda n: self.ema_model.sample(batch_size=n), batches))
+                all_videos_list = list(map(lambda n: self.ema_model.sample(batch_size=n, cond = self.sample_text, cond_scale = self.cond_scale), batches))
                 all_videos_list = torch.cat(all_videos_list, dim = 0)
 
                 all_videos_list = F.pad(all_videos_list, (2, 2, 2, 2))
 
                 one_gif = rearrange(all_videos_list, '(i j) c f h w -> c f (i h) (j w)', i = self.num_sample_rows)
-                video_path = str(self.results_folder / str(f'{milestone}.gif'))
+                video_path = str(self.results_folder / str(f's{self.step}_m{milestone}.gif'))
                 video_tensor_to_gif(one_gif, video_path)
                 log = {**log, 'sample': video_path}
                 self.save(milestone)
-
             log_fn(log)
             self.step += 1
 
