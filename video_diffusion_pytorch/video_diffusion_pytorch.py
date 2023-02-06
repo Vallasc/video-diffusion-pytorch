@@ -933,7 +933,7 @@ class Trainer(object):
     def load(self, milestone = -1, **kwargs):
         if milestone == -1:
             all_milestones = [int(p.stem.split('-')[-1]) for p in Path(self.results_folder).glob('**/*.pt')]
-            if len(all_milestones) > 0: 
+            if len(all_milestones) <= 0: 
                 print('need to have at least one milestone to load from latest checkpoint!')
                 return
             milestone = max(all_milestones)
