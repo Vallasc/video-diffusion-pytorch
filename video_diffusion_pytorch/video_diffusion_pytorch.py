@@ -344,13 +344,13 @@ class Attention(nn.Module):
 class Unet3D(nn.Module):
     def __init__(
         self,
-        dim,
-        cond_dim = None,
+        dim,                        # Base channel
+        cond_dim = None,            # Conditioning embedding dimension
         out_dim = None,
-        dim_mults=(1, 2, 4, 8),
+        dim_mults=(1, 2, 4, 8),     # Channel multipliers
         channels = 3,
-        attn_heads = 8,
-        attn_dim_head = 32,
+        attn_heads = 8,             # Attention resolutions
+        attn_dim_head = 32,         # Attention head dimension
         use_bert_text_cond = False,
         init_dim = None,
         init_kernel_size = 7,
@@ -933,7 +933,9 @@ class Trainer(object):
     def load(self, milestone = -1, **kwargs):
         if milestone == -1:
             all_milestones = [int(p.stem.split('-')[-1]) for p in Path(self.results_folder).glob('**/*.pt')]
-            assert len(all_milestones) > 0, 'need to have at least one milestone to load from latest checkpoint (milestone == -1)'
+            if len(all_milestones) > 0: 
+                print('need to have at least one milestone to load from latest checkpoint!')
+                return
             milestone = max(all_milestones)
 
         data = torch.load(str(self.results_folder / f'model-{milestone}.pt'))
