@@ -516,7 +516,7 @@ class Unet3D(nn.Module):
         x = self.mid_block2(x, t)
 
         for block1, block2, spatial_attn, temporal_attn, upsample in self.ups:
-            # x = torch.cat((x, h.pop()), dim = 1)
+            x = torch.cat((x, h.pop()), dim = 1)
             x = block1(x, t)
             x = block2(x, t)
             x = spatial_attn(x)
